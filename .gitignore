@@ -6,7 +6,17 @@
 *.apk
 *.aab
 *.ap_
+*.rar
+*.zip
+*.7z
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.xz
 dist/
+releases/
+release_*/
 
 # Android Studio / Gradle caches
 .gradle/
