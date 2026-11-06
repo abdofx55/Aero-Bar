@@ -93,9 +93,14 @@ class QingganVehicleHvacRepositoryImpl @Inject constructor(
 
         // IPowerManagerService Transaction Codes
         private const val TX_POWER_GET_AVN_STATUS = 3
+        private const val TX_POWER_ENTER_SCREEN_OFF = 5
         private const val TX_POWER_EXIT_SCREEN_OFF = 6
+        private const val TX_POWER_ENTER_SCREEN_SAVER = 7
+        private const val TX_POWER_EXIT_SCREEN_SAVER = 8
         private const val TX_POWER_IS_SCREEN_OFF = 14
         private const val TX_POWER_ENTER_STANDBY = 19
+        private const val TX_POWER_EXIT_STANDBY = 20
+        private const val TX_POWER_IS_STANDBY = 21
 
         // ISystemPolicy (ReverseManager) Transaction Codes
         private const val TX_POLICY_REGISTER_REVERSE_CB = 12
@@ -433,15 +438,21 @@ class QingganVehicleHvacRepositoryImpl @Inject constructor(
     }
 
     override fun wakeScreenIfOff(): Boolean {
-        val pb = powerBinder
+        val pb = powerBinder ?: getSystemBinder(SERVICE_POWER).also { powerBinder = it }
+        var handled = false
         if (pb != null) {
             val isOff = transactIntResult(pb, DESC_POWER, TX_POWER_IS_SCREEN_OFF) == 1
-            if (isOff) {
+            val isStandby = transactIntResult(pb, DESC_POWER, TX_POWER_IS_STANDBY) == 1
+            if (isOff || isStandby || _telemetryState.value.isScreenStandby) {
+                transactBooleanCmd(pb, DESC_POWER, TX_POWER_EXIT_STANDBY)
                 transactBooleanCmd(pb, DESC_POWER, TX_POWER_EXIT_SCREEN_OFF)
-                _telemetryState.update { it.copy(isScreenStandby = false) }
-                return true
+                transactBooleanCmd(pb, DESC_POWER, TX_POWER_EXIT_SCREEN_SAVER)
+                handled = true
             }
         } else if (_telemetryState.value.isScreenStandby) {
+            handled = true
+        }
+        if (handled) {
             _telemetryState.update { it.copy(isScreenStandby = false) }
             return true
         }
@@ -485,11 +496,15 @@ class QingganVehicleHvacRepositoryImpl @Inject constructor(
 
     override fun stepTemperature(deltaSteps: Int) {
         if (wakeScreenIfOff() || deltaSteps == 0) return
+        val steps = kotlin.math.abs(deltaSteps)
         val cb = canBusBinder
         if (cb != null) {
             val tx = if (deltaSteps > 0) TX_CANBUS_TEMP_UP else TX_CANBUS_TEMP_DOWN
-            repeat(kotlin.math.abs(deltaSteps).coerceAtMost(5)) {
-                transactBooleanCmd(cb, DESC_CANBUS, tx)
+            scope.launch {
+                repeat(steps) { i ->
+                    if (i > 0) kotlinx.coroutines.delay(80L)
+                    transactBooleanCmd(cb, DESC_CANBUS, tx)
+                }
             }
         }
         _telemetryState.update { current ->
@@ -506,11 +521,15 @@ class QingganVehicleHvacRepositoryImpl @Inject constructor(
 
     override fun stepFanSpeed(deltaSteps: Int) {
         if (wakeScreenIfOff() || deltaSteps == 0) return
+        val steps = kotlin.math.abs(deltaSteps)
         val cb = canBusBinder
         if (cb != null) {
             val tx = if (deltaSteps > 0) TX_CANBUS_WIND_UP else TX_CANBUS_WIND_DOWN
-            repeat(kotlin.math.abs(deltaSteps).coerceAtMost(4)) {
-                transactBooleanCmd(cb, DESC_CANBUS, tx)
+            scope.launch {
+                repeat(steps) { i ->
+                    if (i > 0) kotlinx.coroutines.delay(80L)
+                    transactBooleanCmd(cb, DESC_CANBUS, tx)
+                }
             }
         }
         _telemetryState.update { current ->

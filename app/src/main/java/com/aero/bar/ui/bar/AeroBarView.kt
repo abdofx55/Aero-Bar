@@ -63,35 +63,65 @@ fun AeroBarView(
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(88.dp)
-                .background(PureBlack)
-                .padding(horizontal = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        if (state.isBarCollapsed) {
+            // Minimal Collapsed Strip (16dp) with glowing center handle to tap to expand
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(16.dp)
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .clickable { onIntent(AeroBarIntent.OnToggleBarCollapse) },
+                contentAlignment = Alignment.Center
             ) {
-                // =========================================================================
-                // 1. LEFT GROUP: System Navigation (Back, Home, Recents, All Apps)
-                // =========================================================================
+                Box(
+                    modifier = Modifier
+                        .width(52.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.6f))
+                )
+            }
+        } else {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(88.dp)
+                    .background(PureBlack)
+                    .padding(horizontal = 10.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                if (state.hvacState.isScreenStandby) {
+                                    onIntent(AeroBarIntent.OnHomeClicked)
+                                }
+                            },
+                            onDoubleTap = { onIntent(AeroBarIntent.OnToggleBarCollapse) }
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 1. Back (32.dp icon with tactile press feedback)
-                    AeroIconButton(
-                        icon = AeroIcons.IcNavBack,
-                        contentDescription = "Back",
-                        isActive = false,
-                        iconSize = 32.dp,
-                        width = 56.dp,
-                        onClick = { onIntent(AeroBarIntent.OnBackClicked) }
-                    )
+                    // =========================================================================
+                    // 1. LEFT GROUP: System Navigation (Back, Home, Recents, All Apps)
+                    // =========================================================================
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 1. Back (32.dp icon with tactile press feedback; long-press collapses the dock)
+                        AeroIconButton(
+                            icon = AeroIcons.IcNavBack,
+                            contentDescription = "Back",
+                            isActive = false,
+                            iconSize = 32.dp,
+                            width = 56.dp,
+                            onClick = { onIntent(AeroBarIntent.OnBackClicked) },
+                            onLongClick = { onIntent(AeroBarIntent.OnToggleBarCollapse) }
+                        )
 
                     // 2. Home (Remains ACTIVE while floating Recents / All Apps are open; only deselects when a full app is open)
                     AeroIconButton(
@@ -218,6 +248,7 @@ fun AeroBarView(
             }
         }
     }
+}
 }
 
 /**

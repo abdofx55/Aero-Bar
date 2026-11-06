@@ -19,7 +19,8 @@ data class AeroBarState(
     val isRecentsOpen: Boolean = false,
     val activeHvacSlider: ActiveHvacSlider = ActiveHvacSlider.NONE,
     val isCarParked: Boolean = true,
-    val overlayDismissCountdown: Int = 15
+    val overlayDismissCountdown: Int = 15,
+    val isBarCollapsed: Boolean = false
 )
 
 /**
@@ -34,6 +35,7 @@ sealed interface AeroBarIntent {
     data object OnRecentsDoubleClicked : AeroBarIntent
     data object OnDrawerToggleClicked : AeroBarIntent
     data object OnResetOverlayTimer : AeroBarIntent
+    data object OnToggleBarCollapse : AeroBarIntent
 
     // 360° Around View Camera
     data object On360CameraClicked : AeroBarIntent

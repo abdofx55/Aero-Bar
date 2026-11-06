@@ -28,13 +28,14 @@ class AeroBarViewModel(
     private val recentAppsRepository: RecentAppsRepository? = null,
     private val recentAppsViewModel: RecentAppsViewModel? = null,
     private val onOverlayResize: ((Boolean) -> Unit)? = null,
-    private val onHomeAction: (() -> Unit)? = null
+    private val onHomeAction: (() -> Unit)? = null,
+    private val onBarCollapseChange: ((Boolean) -> Unit)? = null
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "AeroBarViewModel"
         private const val SLIDER_AUTO_HIDE_MS = 3000L
-        private const val DOUBLE_TAP_WINDOW_MS = 280L
+        private const val DOUBLE_TAP_WINDOW_MS = 450L
         private const val OVERLAY_AUTO_DISMISS_SECONDS = 15
     }
 
@@ -144,6 +145,10 @@ class AeroBarViewModel(
         }
     }
 
+    fun wakeScreenIfOff(): Boolean {
+        return vehicleHvacRepository.wakeScreenIfOff()
+    }
+
     fun onIntent(intent: AeroBarIntent) {
         Log.i(TAG, "AeroBar Intent received: $intent | current state: recents=${_uiState.value.isRecentsOpen}, drawer=${_uiState.value.isDrawerOpen}, slider=${_uiState.value.activeHvacSlider}")
         when (intent) {
@@ -167,6 +172,7 @@ class AeroBarViewModel(
             }
 
             is AeroBarIntent.OnHomeLongClicked -> {
+                if (vehicleHvacRepository.wakeScreenIfOff()) return
                 closeOverlays()
                 vehicleHvacRepository.dismissVehiclePanels()
                 vehicleHvacRepository.enterScreenStandby()
@@ -239,6 +245,15 @@ class AeroBarViewModel(
                 if (_uiState.value.isDrawerOpen || _uiState.value.isRecentsOpen) {
                     startOverlayCountdown()
                 }
+            }
+
+            is AeroBarIntent.OnToggleBarCollapse -> {
+                val newCollapsed = !_uiState.value.isBarCollapsed
+                if (newCollapsed) {
+                    closeOverlays()
+                }
+                _uiState.update { it.copy(isBarCollapsed = newCollapsed) }
+                onBarCollapseChange?.invoke(newCollapsed)
             }
 
             is AeroBarIntent.On360CameraClicked -> {

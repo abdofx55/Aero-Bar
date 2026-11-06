@@ -301,11 +301,11 @@ private fun RecentAppCardExact(
             )
             .padding(10.dp)
     ) {
-        // 1. Top-Right Dismiss [X] Button (Circular with 38dp touch target)
+        // 1. Top-Right Dismiss [X] Button (Enlarged 50dp touch target for automotive ergonomics)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(38.dp)
+                .size(50.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -315,16 +315,16 @@ private fun RecentAppCardExact(
         ) {
             Box(
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
-                    .background(CloseButtonBg),
+                    .background(Color.White.copy(alpha = 0.20f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = AeroIcons.IcCloseX,
                     contentDescription = "Close Task",
-                    tint = MutedText,
-                    modifier = Modifier.size(13.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

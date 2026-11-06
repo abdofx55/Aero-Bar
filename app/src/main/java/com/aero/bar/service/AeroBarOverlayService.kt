@@ -73,6 +73,7 @@ class AeroBarOverlayService : Service() {
     companion object {
         private const val TAG = "AeroBarService"
         private const val BAR_HEIGHT_DP = 88
+        private const val TYPE_NAVIGATION_BAR = 2019
         private const val TYPE_NAVIGATION_BAR_PANEL = 2024
     }
 
@@ -158,7 +159,8 @@ class AeroBarOverlayService : Service() {
             vehicleHvacRepository = vehicleHvacRepository,
             recentAppsViewModel = recentAppsViewModel,
             onOverlayResize = ::setPopupWindowTouchable,
-            onHomeAction = ::navigateToHome
+            onHomeAction = ::navigateToHome,
+            onBarCollapseChange = ::onBarCollapseChanged
         )
         appDrawerViewModel = AppDrawerViewModel(appRepository)
 
@@ -172,9 +174,22 @@ class AeroBarOverlayService : Service() {
         setupDualOverlayWindows()
     }
 
+    private fun onBarCollapseChanged(collapsed: Boolean) {
+        val targetHeight = if (collapsed) dpToPx(16) else dpToPx(BAR_HEIGHT_DP)
+        barLayoutParams?.height = targetHeight
+        barComposeView?.let { v ->
+            try {
+                windowManager?.updateViewLayout(v, barLayoutParams)
+                Log.i(TAG, "AeroBar dock height updated to $targetHeight px (collapsed=$collapsed)")
+            } catch (e: Exception) {
+                Log.w(TAG, "updateViewLayout error: ${e.message}")
+            }
+        }
+    }
+
     /**
-     * Prevents third-party apps from entering sticky immersive fullscreen and hiding AeroBar,
-     * and resets any touch-blocking overscan so the bottom 88px bar remains 100% responsive.
+     * Deletes forced immersive fullscreen so apps cleanly receive bottom window insets,
+     * ensures hardware keys override is active, and eliminates any lingering OEM 200px bars.
      */
     private fun enforcePermanentNonImmersivePolicy() {
         serviceScope.launch(Dispatchers.IO) {
@@ -182,13 +197,15 @@ class AeroBarOverlayService : Service() {
                 android.provider.Settings.Global.putString(
                     contentResolver,
                     "policy_control",
-                    "immersive.full=*"
+                    "null"
                 )
             } catch (_: Exception) {}
 
             val commands = listOf(
-                "settings put global policy_control immersive.full=*",
-                "wm overscan reset",
+                "settings delete global policy_control",
+                "setprop qemu.hw.mainkeys 1",
+                "killall com.android.systemui",
+                "pkill -f com.android.systemui",
                 "dumpsys deviceidle whitelist +$packageName",
                 "cmd deviceidle whitelist +$packageName",
                 "dumpsys deviceidle whitelist +com.aero.bar",
@@ -315,10 +332,11 @@ class AeroBarOverlayService : Service() {
                     val dVm = appDrawerViewModel ?: return@AeroBarTheme
                     val dState by dVm.uiState.collectAsState()
 
-                    // Synchronize popup touchability with overlay state (Recents, All Apps, or HVAC Slider)
+                    // Synchronize popup touchability with overlay state (Recents, All Apps, HVAC Slider, or Standby Tap-to-Wake)
                     val isAnyPopupOpen = state.isRecentsOpen ||
                         state.isDrawerOpen ||
-                        state.activeHvacSlider != com.aero.bar.ui.bar.ActiveHvacSlider.NONE
+                        state.activeHvacSlider != com.aero.bar.ui.bar.ActiveHvacSlider.NONE ||
+                        state.hvacState.isScreenStandby
 
                     LaunchedEffect(isAnyPopupOpen) {
                         setPopupWindowTouchable(isAnyPopupOpen)
@@ -341,6 +359,21 @@ class AeroBarOverlayService : Service() {
                             .fillMaxSize()
                             .padding(bottom = BAR_HEIGHT_DP.dp)
                     ) {
+                        // Standby Tap-to-Wake Overlay Catcher: tapping anywhere on the upper screen wakes the display
+                        if (state.hvacState.isScreenStandby) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.90f))
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        vm.wakeScreenIfOff()
+                                    }
+                            )
+                        }
+
                         // Dark Scrim Backdrop for Recents / All Apps
                         AnimatedVisibility(
                             visible = state.isRecentsOpen || state.isDrawerOpen,
@@ -490,7 +523,53 @@ class AeroBarOverlayService : Service() {
 
         // Add Popup Window first, then Permanent Bar Window on top so Bar has highest Z-order
         addWindowWithPrivilegeFallback(popupComposeView!!, popupParams, defaultOverlayType)
-        addWindowWithPrivilegeFallback(barComposeView!!, barParams, defaultOverlayType)
+        addBarWindowWithPrivilegeFallback(barComposeView!!, barParams, defaultOverlayType)
+    }
+
+    private fun addBarWindowWithPrivilegeFallback(
+        view: View,
+        params: WindowManager.LayoutParams,
+        fallbackType: Int
+    ) {
+        fun safeRemove() {
+            try {
+                windowManager?.removeViewImmediate(view)
+            } catch (_: Exception) {}
+        }
+
+        // Tier 1: True System Navigation Bar (reserves native insets in WindowManager for all apps)
+        try {
+            safeRemove()
+            params.type = TYPE_NAVIGATION_BAR
+            windowManager?.addView(view, params)
+            Log.i(TAG, "Added ${params.title} with native TYPE_NAVIGATION_BAR (2019)")
+            return
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed TYPE_NAVIGATION_BAR (2019): ${e.message}")
+            safeRemove()
+        }
+
+        // Tier 2: Navigation Bar Panel
+        try {
+            safeRemove()
+            params.type = TYPE_NAVIGATION_BAR_PANEL
+            windowManager?.addView(view, params)
+            Log.i(TAG, "Added ${params.title} with TYPE_NAVIGATION_BAR_PANEL (2024)")
+            return
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed TYPE_NAVIGATION_BAR_PANEL (2024): ${e.message}")
+            safeRemove()
+        }
+
+        // Tier 3: Standard Overlay type
+        try {
+            safeRemove()
+            params.type = fallbackType
+            windowManager?.addView(view, params)
+            Log.i(TAG, "Added ${params.title} with standard overlay type ($fallbackType)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to add window ${params.title}", e)
+        }
     }
 
     private fun addWindowWithPrivilegeFallback(
@@ -498,11 +577,19 @@ class AeroBarOverlayService : Service() {
         params: WindowManager.LayoutParams,
         fallbackType: Int
     ) {
+        fun safeRemove() {
+            try {
+                windowManager?.removeViewImmediate(view)
+            } catch (_: Exception) {}
+        }
+
         try {
+            safeRemove()
             params.type = TYPE_NAVIGATION_BAR_PANEL
             windowManager?.addView(view, params)
             Log.i(TAG, "Added ${params.title} with TYPE_NAVIGATION_BAR_PANEL (2024)")
         } catch (_: Exception) {
+            safeRemove()
             params.type = fallbackType
             windowManager?.addView(view, params)
             Log.i(TAG, "Added ${params.title} with standard overlay type ($fallbackType)")

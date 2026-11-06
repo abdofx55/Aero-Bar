@@ -382,15 +382,21 @@ class RecentAppsRepositoryImpl @Inject constructor(
                 addAll(ForegroundAppTracker.trackedPackages())
                 addAll(usageStats.keys)
                 addAll(packageToTaskIdsMap.keys)
+                cachedRecentTasks.forEach { add(it.packageName) }
             }
-            val ordered = orderPackages(candidates, usageStats, getDismissedMap(), limit = 2)
-            if (ordered.isEmpty()) return@withContext false
+            val ordered = orderPackages(candidates, usageStats, getDismissedMap(), limit = 6)
 
             val current = currentForegroundPackage(usageStats)
-            val targetPkg = if (current == ordered[0]) {
-                ordered.getOrNull(1) ?: return@withContext false
-            } else {
-                ordered[0]
+            val targetPkg = when {
+                ordered.size >= 2 && current == ordered[0] -> ordered[1]
+                ordered.isNotEmpty() && current != ordered[0] -> ordered[0]
+                cachedRecentTasks.size >= 2 && current == cachedRecentTasks[0].packageName -> cachedRecentTasks[1].packageName
+                cachedRecentTasks.isNotEmpty() && current != cachedRecentTasks[0].packageName -> cachedRecentTasks[0].packageName
+                ordered.size >= 2 -> ordered[1]
+                cachedRecentTasks.size >= 2 -> cachedRecentTasks[1].packageName
+                ordered.isNotEmpty() -> ordered[0]
+                cachedRecentTasks.isNotEmpty() -> cachedRecentTasks[0].packageName
+                else -> return@withContext false
             }
 
             switchToPackage(targetPkg)
