@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Aero Bar</string>
+    <string name="accessibility_service_description">Enables hardware navigation actions (Back, Home, Recents) for Aero Bar in Dongfeng Shine cockpit.</string>
+</resources>

@@ -1,0 +1,38 @@
+# ==============================================================================
+# Aero Bar — Android Studio & Gradle Git Ignore
+# ==============================================================================
+
+# Built application files & releases
+*.apk
+*.aab
+*.ap_
+dist/
+
+# Android Studio / Gradle caches
+.gradle/
+build/
+app/build/
+.kotlin/
+.idea/
+local.properties
+
+# Log files & JVM crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# Signing Keystores & Private Certificates
+keystore/
+*.keystore
+*.jks
+*.p12
+
+# Screenshots & design artifacts
+screens/
+scratch/
+*.png
+!app/src/main/res/**/*.png
+
+# OS configs
+Thumbs.db
+.DS_Store
