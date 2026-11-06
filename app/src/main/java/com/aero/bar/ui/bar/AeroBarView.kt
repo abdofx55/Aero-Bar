@@ -414,7 +414,8 @@ private fun AeroCamera360Button(
 }
 
 /**
- * Bold Typography Toggle Button for "AC" (Single-tap = AC Power, Long-press = AUTO Mode).
+ * Bold Typography Toggle Button for "AC" / "AUTO" (Single-tap = AC Power, Long-press = AUTO Mode).
+ * Fixed 76.dp width so switching between "AC" and "AUTO" produces zero layout resizing.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -432,10 +433,14 @@ private fun AeroAcToggleButton(
         label = "acScale"
     )
 
+    val isAutoActive = isAcOn && isAutoMode
+    val displayText = if (isAutoActive) "AUTO" else "AC"
+
     val animatedColor by animateColorAsState(
         targetValue = when {
             isPressed -> Color.White
-            isAcOn -> if (isAutoMode) WarmOrangeGlow else ElectricCyan
+            isAutoActive -> WarmOrangeGlow
+            isAcOn -> ElectricCyan
             else -> InactiveIconTint
         },
         animationSpec = tween(durationMillis = 140),
@@ -444,7 +449,7 @@ private fun AeroAcToggleButton(
 
     Box(
         modifier = Modifier
-            .width(68.dp)
+            .width(76.dp)
             .height(62.dp)
             .graphicsLayer {
                 scaleX = pressScale
@@ -467,11 +472,11 @@ private fun AeroAcToggleButton(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "AC",
+            text = displayText,
             color = animatedColor,
-            fontSize = 22.sp,
+            fontSize = if (isAutoActive) 17.sp else 22.sp,
             fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.5.sp
+            letterSpacing = if (isAutoActive) 0.8.sp else 0.5.sp
         )
     }
 }
