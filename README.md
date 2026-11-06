@@ -1,4 +1,10 @@
-# AeroBar — نظام التحكم الموحد والتنقل لشاشة Dongfeng Shine (960×1280)
+# AeroBar — نظام التحكم الموحد والتنقل لشاشة Dongfeng Shine (960×1280) 🚗⚡
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.22-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202024.02-4285F4?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Platform](https://img.shields.io/badge/Platform-Android%208.1%20API%2027-00D2FF?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/)
+[![Security](https://img.shields.io/badge/Security-R8%20Hardened%20%26%20Anti--Tamper-success?style=for-the-badge&logo=shield)](https://github.com/)
+[![Signing](https://img.shields.io/badge/Signed-Dongfeng%20Platform%20Key-orange?style=for-the-badge&logo=google-authenticator)](https://github.com/)
 
 تطبيق **`AeroBar`** هو البديل الهندسي الكامل لشريط النظام الأصلي (`SystemUI Navigation & HVAC Bar`) في سيارة **Dongfeng Shine**. تم بناء المشروع من الصفر باستخدام **Kotlin** و **Jetpack Compose** وفق معمارية **Clean Architecture** ومبادئ **SOLID** ونمط **MVI (Model-View-Intent)**، مع اتصال مباشر (Zero-Latency) بخدمات الـ **CAN-Bus** والـ **Binder** الخاصة بالسيارة، وأيقونات فيكتور مرسومة برمجياً بالكامل (**100% Pure Compose `ImageVector`**).
 
@@ -9,7 +15,8 @@
 1. **شريط موحد في صف واحد فقط (`Single-Row 960×88px`)**:
    - تقليص ارتفاع الشريط من صفين (`176px`) إلى صف واحد رشيق بارتفاع **`88px`** فقط، مما يوفر **`88px` إضافية** لكل التطبيقات والخرائط على الشاشة (`960×1192px` مساحة صافية).
    - خلفية **Pure OLED Black (`#000000`)** بدون أي إطارات خارجية (`Zero Outlines / Zero Borders`).
-   - يضم **13 وظيفة كاملة** في صف واحد متناسق (أسلوب **Design #1 Icons** + **Design #5 Radial Glow & Bottom Indicator Bar**):
+   - نمط التحديد العصري **(Dark Pill #121822 + Cyan #00D2FF Glow)** للأزرار النشطة.
+   - يضم **13 وظيفة كاملة** في صف واحد متناسق:
      - **مجموعة التنقل (يسار)**: رجوع (`Back`)، الرئيسية (`Home`)، التطبيقات المفتوحة (`Recents` — ضغطة واحدة تفتح القائمة، وضغطتين سريعتين `Double-Tap` تبدّل فوراً بين آخر تطبيقين `Alt+Tab`)، وجميع التطبيقات (`All Apps`).
      - **زر كاميرات الرؤية المحيطية (`360° AVM Camera`)**: يفتح ويغلق نظام الكاميرات المحيطية (`ISystemPolicy.showAVM`) بضغطة واحدة.
      - **مجموعة التكييف الوسطى (`HVAC Core`)**:
@@ -35,6 +42,20 @@
 4. **نافذة جميع التطبيقات (`All Apps Drawer`)**:
    - شبكة خماسية الأعمدة (`5 Columns LazyVerticalGrid`) بتصميم أسود نقي بدون حدود.
    - تعرض **الـ 8 تطبيقات الأساسية للسيارة** (البلوتوث، الراديو، الموسيقى، الفيديو، التكييف والمقاعد، الإعدادات، CarPlay/CarLife، كاميرا التسجيل DVR) جنباً إلى جنب مع تطبيقات المستخدم، مع فلترة وإخفاء أكثر من 94 حزمة نظام داخلية صينية لمنع الفوضى.
+
+5. **الأيقونة الرسمية لتطبيقات Aero (`The Aero Wing Icon`)**:
+   - تصميم فيكتور فائق الدقة لطائرة نفاثة وجناح دلتا أيروديناميكي مضيء بلون السيان المشع فوق بار الملاحة السفلي.
+   - يدعم كافة أشكال وتوزيعات أندرويد القياسية (`Squircle` و `Round`) مع توليد كامل لجميع دقات الـ Mipmaps (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+
+6. **الإغلاق التلقائي الصامت للواجهات (`15-Second Inactivity Auto-Dismiss`)**:
+   - مؤقت زمني ذكي يعمل في الخلفية يغلق نوافذ الـ Drawer والـ Recents تلقائياً بعد **15 ثانية** من عدم الاستخدام لمنع تشتيت السائق.
+   - واجهة نظيفة تماماً بدون أي عداد رقمي، مع إعادة ضبط المؤقت فوراً إلى **15 ثانية** مع أي لمس للشاشة، سكرول، أو تصفح.
+
+7. **منظومة الحماية وتشفير الكود ومنع الكسر (`Hardened Security & Anti-Reverse Engineering`)**:
+   - **التعمية والتشويش الكامل بـ R8:** دمج وتسطيح شجرة المجلدات (`-repackageclasses ''`)، وتحويل أسماء الكلاسات والدوال لحروف عشوائية مبهمة (`a.b.c.d`) مع حذف أسماء ملفات المصدر وأرقام الأسطر وسجلات الـ Debug.
+   - **فاحص البصمة وقت التشغيل (`SecurityGuard Anti-Tamper`):** فحص بصمة الـ SHA-256 للشهادة وقت الإقلاع ومقارنتها بالبصمة الأصلية المشفرة بـ XOR، وإنهاء العملية فوراً في حال محاولة إعادة التجميع أو التوقيع بمفتاح بديل.
+   - **كشف ومكافحة أدوات التنقيح (`Anti-Debugging`):** رصد مصححات الذاكرة (JDWP / Frida) في نسخ الـ Release.
+   - **خفة استثنائية:** تقليص حجم الـ APK بنسبة **82%** ليصبح **1.94 ميجابايت فقط**.
 
 ---
 
@@ -235,19 +256,26 @@ Aero_Bar/
 
 ## 7. طريقة البناء والتثبيت (Build & Deployment)
 
-### 1. بناء ملف الـ APK:
+### 1. بناء نسخة الـ Release المشفرة والموقعة (Production Hardened Build):
+```powershell
+.\gradlew.bat assembleDongfeng_shineRelease
+```
+- ينتج ملف الـ APK المشفر والموقع بـ Platform Certificate في المسار:
+  `app/build/outputs/apk/dongfeng_shine/release/app-dongfeng_shine-release.apk`
+- الحجم الصافي: **1.94 ميجابايت** (مع تفعيل كامل لـ R8 Obfuscation & Resource Shrinking).
+
+### 2. بناء نسخة الـ Debug للتطوير السريع:
 ```powershell
 .\gradlew.bat assembleDongfeng_shineDebug
 ```
-ينتج ملف الـ APK في المسار:
-`app/build/outputs/apk/dongfeng_shine/debug/app-dongfeng_shine-debug.apk`
 
-### 2. التثبيت والتشغيل المباشر عبر ADB:
+### 3. التثبيت والتشغيل المباشر عبر ADB:
 ```powershell
-adb install -r app/build/outputs/apk/dongfeng_shine/debug/app-dongfeng_shine-debug.apk
-adb shell appops set com.aero.bar SYSTEM_ALERT_WINDOW allow
-adb shell appops set com.aero.bar GET_USAGE_STATS allow
-adb shell am start-foreground-service -n com.aero.bar/.service.AeroBarOverlayService
+adb install -r app/build/outputs/apk/dongfeng_shine/release/app-dongfeng_shine-release.apk
+adb shell appops set com.aero.bar.dongfeng_shine SYSTEM_ALERT_WINDOW allow
+adb shell settings put secure enabled_accessibility_services com.aero.bar.dongfeng_shine/com.aero.bar.service.AeroAccessibilityService
+adb shell settings put secure accessibility_enabled 1
+adb shell am startservice -n com.aero.bar.dongfeng_shine/com.aero.bar.service.AeroBarOverlayService
 ```
 
 ### 3. اختبار أوامر التكييف الصوتية أو البرمجية (`Aero_Voice Bridge`):
