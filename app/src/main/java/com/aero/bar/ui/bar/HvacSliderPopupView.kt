@@ -135,8 +135,8 @@ private fun TemperatureRulerSliderPopup(
 
     Column(
         modifier = modifier
-            .width(500.dp)
-            .height(74.dp)
+            .width(580.dp)
+            .height(88.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(Color(0xFF0C1016))
             .pointerInput(Unit) {
@@ -163,7 +163,7 @@ private fun TemperatureRulerSliderPopup(
                     }
                 )
             }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -172,7 +172,7 @@ private fun TemperatureRulerSliderPopup(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left Minus [−] Button
+            // Left Minus [−] Button (Larger 54.dp touch target)
             SliderStepIconButton(
                 icon = AeroIcons.IcMinus,
                 contentDescription = "Decrease Temperature",
@@ -194,9 +194,9 @@ private fun TemperatureRulerSliderPopup(
 
                     Box(
                         modifier = Modifier
-                            .width(if (isCenter) 64.dp else 46.dp)
-                            .height(42.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .width(if (isCenter) 70.dp else 48.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
                             .background(if (isCenter) activeBgColor else Color.Transparent)
                             .clickable(
                                 enabled = isWithinBounds,
@@ -225,8 +225,8 @@ private fun TemperatureRulerSliderPopup(
                                 text = label,
                                 color = textColor,
                                 fontSize = when {
-                                    isCenter -> 23.sp
-                                    abs(offset) == 1 -> 16.sp
+                                    isCenter -> 26.sp
+                                    abs(offset) == 1 -> 17.sp
                                     else -> 14.sp
                                 },
                                 fontWeight = if (isCenter) FontWeight.ExtraBold else FontWeight.SemiBold,
@@ -238,7 +238,7 @@ private fun TemperatureRulerSliderPopup(
                 }
             }
 
-            // Right Plus [+] Button
+            // Right Plus [+] Button (Larger 54.dp touch target)
             SliderStepIconButton(
                 icon = AeroIcons.IcPlus,
                 contentDescription = "Increase Temperature",
@@ -246,12 +246,12 @@ private fun TemperatureRulerSliderPopup(
             )
         }
 
-        // Bottom 5.dp Thermal Progress Track
+        // Bottom 6.dp Thermal Progress Track
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 6.dp)
-                .height(5.dp)
+                .height(6.dp)
                 .clip(RoundedCornerShape(50))
                 .background(ObsidianCard)
         ) {
@@ -285,8 +285,8 @@ private fun FanSegmentedSliderPopup(
 
     Row(
         modifier = modifier
-            .width(460.dp)
-            .height(66.dp)
+            .width(540.dp)
+            .height(84.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(Color(0xFF0C1016))
             .pointerInput(Unit) {
@@ -313,11 +313,11 @@ private fun FanSegmentedSliderPopup(
                     }
                 )
             }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left Minus [−] Button
+        // Left Minus [−] Button (Larger 54.dp touch target)
         SliderStepIconButton(
             icon = AeroIcons.IcMinus,
             contentDescription = "Decrease Fan Speed",
@@ -326,7 +326,7 @@ private fun FanSegmentedSliderPopup(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // 8 Luminous Segments (Levels 1..8)
+        // 8 Luminous Segments (Levels 1..8, Larger 46.dp height)
         Row(
             modifier = Modifier
                 .weight(1f)
@@ -345,8 +345,8 @@ private fun FanSegmentedSliderPopup(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(segmentColor)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -358,7 +358,7 @@ private fun FanSegmentedSliderPopup(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Right Plus [+] Button
+        // Right Plus [+] Button (Larger 54.dp touch target)
         SliderStepIconButton(
             icon = AeroIcons.IcPlus,
             contentDescription = "Increase Fan Speed",
@@ -375,8 +375,8 @@ private fun SliderStepIconButton(
 ) {
     Box(
         modifier = Modifier
-            .size(42.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(54.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(ObsidianCardElevated)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -389,7 +389,7 @@ private fun SliderStepIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = TextPrimary,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(26.dp)
         )
     }
 }

@@ -87,7 +87,7 @@ fun AeroBarView(
                     .fillMaxWidth()
                     .height(88.dp)
                     .background(PureBlack)
-                    .padding(horizontal = 10.dp)
+                    .padding(horizontal = 28.dp)
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = {
@@ -109,144 +109,144 @@ fun AeroBarView(
                     // 1. LEFT GROUP: System Navigation (Back, Home, Recents, All Apps)
                     // =========================================================================
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 1. Back (32.dp icon with tactile press feedback; long-press collapses the dock)
+                        // 1. Back (38.dp icon with tactile press feedback; long-press collapses the dock)
                         AeroIconButton(
                             icon = AeroIcons.IcNavBack,
                             contentDescription = "Back",
                             isActive = false,
-                            iconSize = 32.dp,
-                            width = 56.dp,
+                            iconSize = 38.dp,
+                            width = 68.dp,
                             onClick = { onIntent(AeroBarIntent.OnBackClicked) },
                             onLongClick = { onIntent(AeroBarIntent.OnToggleBarCollapse) }
                         )
 
-                    // 2. Home (Remains ACTIVE while floating Recents / All Apps are open; only deselects when a full app is open)
-                    AeroIconButton(
-                        icon = AeroIcons.IcNavHome,
-                        contentDescription = "Home",
-                        isActive = !hvac.isClimatePanelOpen && !hvac.is360CameraActive,
-                        iconSize = 32.dp,
-                        width = 56.dp,
-                        onClick = { onIntent(AeroBarIntent.OnHomeClicked) },
-                        onLongClick = { onIntent(AeroBarIntent.OnHomeLongClicked) }
+                        // 2. Home (Remains ACTIVE while floating Recents / All Apps are open; only deselects when a full app is open)
+                        AeroIconButton(
+                            icon = AeroIcons.IcNavHome,
+                            contentDescription = "Home",
+                            isActive = !hvac.isClimatePanelOpen && !hvac.is360CameraActive,
+                            iconSize = 38.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnHomeClicked) },
+                            onLongClick = { onIntent(AeroBarIntent.OnHomeLongClicked) }
+                        )
+
+                        // 3. Recents (0ms instant single-tap response; rapid double-tap handled in ViewModel)
+                        AeroIconButton(
+                            icon = AeroIcons.IcNavRecents,
+                            contentDescription = "Recent Apps",
+                            isActive = state.isRecentsOpen,
+                            iconSize = 38.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnRecentsClicked) }
+                        )
+
+                        // 4. All Apps Drawer
+                        AeroIconButton(
+                            icon = AeroIcons.IcNavAllApps,
+                            contentDescription = "All Apps",
+                            isActive = state.isDrawerOpen,
+                            iconSize = 38.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnDrawerToggleClicked) }
+                        )
+                    }
+
+                    BarSubtleDivider()
+
+                    // =========================================================================
+                    // 2. 360° AVM CAMERA BUTTON (Icon B: Circular Arrow Ring around "360")
+                    // =========================================================================
+                    AeroCamera360Button(
+                        isActive = hvac.is360CameraActive,
+                        onClick = { onIntent(AeroBarIntent.On360CameraClicked) }
                     )
 
-                    // 3. Recents (0ms instant single-tap response; rapid double-tap handled in ViewModel)
-                    AeroIconButton(
-                        icon = AeroIcons.IcNavRecents,
-                        contentDescription = "Recent Apps",
-                        isActive = state.isRecentsOpen,
-                        iconSize = 32.dp,
-                        width = 56.dp,
-                        onClick = { onIntent(AeroBarIntent.OnRecentsClicked) }
-                    )
+                    BarSubtleDivider()
 
-                    // 4. All Apps Drawer
-                    AeroIconButton(
-                        icon = AeroIcons.IcNavAllApps,
-                        contentDescription = "All Apps",
-                        isActive = state.isDrawerOpen,
-                        iconSize = 32.dp,
-                        width = 56.dp,
-                        onClick = { onIntent(AeroBarIntent.OnDrawerToggleClicked) }
-                    )
-                }
+                    // =========================================================================
+                    // 3. CENTER GROUP: AC (Long-press = AUTO), CLEAN TEMP PILL, CLEAN FAN PILL
+                    // =========================================================================
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 6. AC Power Switch (Single tap = AC Toggle, Long press = AUTO Mode)
+                        AeroAcToggleButton(
+                            isAcOn = hvac.isAcOn,
+                            isAutoMode = hvac.isAutoMode,
+                            onClick = { onIntent(AeroBarIntent.OnAcToggleClicked) },
+                            onLongClick = { onIntent(AeroBarIntent.OnAutoToggleClicked) }
+                        )
 
-                BarSubtleDivider()
+                        // 7. Clean Temperature Pill (21°) — No + / - clutter on the bar
+                        CleanTemperaturePill(
+                            tempCelsius = hvac.temperatureC,
+                            displayText = hvac.formattedTemperature,
+                            isHvacPowered = isHvacPowered,
+                            isSliderOpen = state.activeHvacSlider == ActiveHvacSlider.TEMPERATURE,
+                            onClick = { onIntent(AeroBarIntent.OnTempPillClicked) },
+                            onStepDelta = { delta -> onIntent(AeroBarIntent.OnTemperatureStep(delta)) }
+                        )
 
-                // =========================================================================
-                // 2. 360° AVM CAMERA BUTTON (Icon B: Circular Arrow Ring around "360")
-                // =========================================================================
-                AeroCamera360Button(
-                    isActive = hvac.is360CameraActive,
-                    onClick = { onIntent(AeroBarIntent.On360CameraClicked) }
-                )
+                        // 8. Clean Fan Speed Pill ([Fan] 3) — No + / - clutter on the bar
+                        CleanFanSpeedPill(
+                            windLevel = hvac.fanSpeed,
+                            displayText = hvac.formattedFanSpeed,
+                            isHvacPowered = isHvacPowered,
+                            isSliderOpen = state.activeHvacSlider == ActiveHvacSlider.FAN_SPEED,
+                            onClick = { onIntent(AeroBarIntent.OnFanPillClicked) },
+                            onStepDelta = { delta -> onIntent(AeroBarIntent.OnFanSpeedStep(delta)) }
+                        )
+                    }
 
-                BarSubtleDivider()
+                    BarSubtleDivider()
 
-                // =========================================================================
-                // 3. CENTER GROUP: AC (Long-press = AUTO), CLEAN TEMP PILL, CLEAN FAN PILL
-                // =========================================================================
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 6. AC Power Switch (Single tap = AC Toggle, Long press = AUTO Mode)
-                    AeroAcToggleButton(
-                        isAcOn = hvac.isAcOn,
-                        isAutoMode = hvac.isAutoMode,
-                        onClick = { onIntent(AeroBarIntent.OnAcToggleClicked) },
-                        onLongClick = { onIntent(AeroBarIntent.OnAutoToggleClicked) }
-                    )
+                    // =========================================================================
+                    // 4. RIGHT GROUP: Climate/Seats App, Front Defrost, Air Recirculation (Larger 40.dp Icons)
+                    // =========================================================================
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 9. Full Climate & Seat Heating Control App (Larger 40.dp)
+                        AeroIconButton(
+                            icon = AeroIcons.IcClimateSeatWaves,
+                            contentDescription = "Climate & Seats App",
+                            isActive = hvac.isClimatePanelOpen,
+                            activeColor = ElectricCyan,
+                            iconSize = 40.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnClimateSeatAppClicked) }
+                        )
 
-                    // 7. Clean Temperature Pill (21°) — No + / - clutter on the bar
-                    CleanTemperaturePill(
-                        tempCelsius = hvac.temperatureC,
-                        displayText = hvac.formattedTemperature,
-                        isHvacPowered = isHvacPowered,
-                        isSliderOpen = state.activeHvacSlider == ActiveHvacSlider.TEMPERATURE,
-                        onClick = { onIntent(AeroBarIntent.OnTempPillClicked) },
-                        onStepDelta = { delta -> onIntent(AeroBarIntent.OnTemperatureStep(delta)) }
-                    )
+                        // 10. Front Windshield Defrost (Larger 40.dp)
+                        AeroIconButton(
+                            icon = AeroIcons.IcWindshieldDefrost,
+                            contentDescription = "Front Defrost",
+                            isActive = hvac.isFrontDefrostOn,
+                            activeColor = WarmOrangeGlow,
+                            iconSize = 40.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnFrontDefrostClicked) }
+                        )
 
-                    // 8. Clean Fan Speed Pill ([Fan] 3) — No + / - clutter on the bar
-                    CleanFanSpeedPill(
-                        windLevel = hvac.fanSpeed,
-                        displayText = hvac.formattedFanSpeed,
-                        isHvacPowered = isHvacPowered,
-                        isSliderOpen = state.activeHvacSlider == ActiveHvacSlider.FAN_SPEED,
-                        onClick = { onIntent(AeroBarIntent.OnFanPillClicked) },
-                        onStepDelta = { delta -> onIntent(AeroBarIntent.OnFanSpeedStep(delta)) }
-                    )
-                }
-
-                BarSubtleDivider()
-
-                // =========================================================================
-                // 4. RIGHT GROUP: Climate/Seats App, Front Defrost, Air Recirculation (Larger 34.dp Icons)
-                // =========================================================================
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 9. Full Climate & Seat Heating Control App (Larger 34.dp)
-                    AeroIconButton(
-                        icon = AeroIcons.IcClimateSeatWaves,
-                        contentDescription = "Climate & Seats App",
-                        isActive = hvac.isClimatePanelOpen,
-                        activeColor = ElectricCyan,
-                        iconSize = 34.dp,
-                        width = 62.dp,
-                        onClick = { onIntent(AeroBarIntent.OnClimateSeatAppClicked) }
-                    )
-
-                    // 10. Front Windshield Defrost (Larger 34.dp)
-                    AeroIconButton(
-                        icon = AeroIcons.IcWindshieldDefrost,
-                        contentDescription = "Front Defrost",
-                        isActive = hvac.isFrontDefrostOn,
-                        activeColor = WarmOrangeGlow,
-                        iconSize = 34.dp,
-                        width = 62.dp,
-                        onClick = { onIntent(AeroBarIntent.OnFrontDefrostClicked) }
-                    )
-
-                    // 11. Cabin Air Recirculation (Exact OEM Option 2 Silhouette, Larger 34.dp)
-                    AeroIconButton(
-                        icon = AeroIcons.IcCarRecirculation,
-                        contentDescription = "Air Recirculation",
-                        isActive = hvac.isInternalRecirculation,
-                        activeColor = ElectricCyan,
-                        iconSize = 34.dp,
-                        width = 62.dp,
-                        onClick = { onIntent(AeroBarIntent.OnRecirculationClicked) }
-                    )
+                        // 11. Cabin Air Recirculation (Exact OEM Option 2 Silhouette, Larger 40.dp)
+                        AeroIconButton(
+                            icon = AeroIcons.IcCarRecirculation,
+                            contentDescription = "Air Recirculation",
+                            isActive = hvac.isInternalRecirculation,
+                            activeColor = ElectricCyan,
+                            iconSize = 40.dp,
+                            width = 68.dp,
+                            onClick = { onIntent(AeroBarIntent.OnRecirculationClicked) }
+                        )
+                    }
                 }
             }
-        }
     }
 }
 }
@@ -276,8 +276,8 @@ private fun AeroIconButton(
     contentDescription: String,
     isActive: Boolean,
     activeColor: Color = ElectricCyan,
-    width: Dp = 58.dp,
-    iconSize: Dp = 30.dp,
+    width: Dp = 68.dp,
+    iconSize: Dp = 38.dp,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
 ) {
@@ -317,7 +317,7 @@ private fun AeroIconButton(
     Box(
         modifier = Modifier
             .width(width)
-            .height(58.dp)
+            .height(62.dp)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
@@ -371,8 +371,8 @@ private fun AeroCamera360Button(
 
     Box(
         modifier = Modifier
-            .width(60.dp)
-            .height(58.dp)
+            .width(68.dp)
+            .height(62.dp)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
@@ -393,7 +393,7 @@ private fun AeroCamera360Button(
         contentAlignment = Alignment.Center
     ) {
         Box(
-            modifier = Modifier.size(38.dp),
+            modifier = Modifier.size(46.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -405,7 +405,7 @@ private fun AeroCamera360Button(
             Text(
                 text = "360",
                 color = animatedTint,
-                fontSize = 10.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-0.4).sp
             )
@@ -444,8 +444,8 @@ private fun AeroAcToggleButton(
 
     Box(
         modifier = Modifier
-            .width(60.dp)
-            .height(58.dp)
+            .width(68.dp)
+            .height(62.dp)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
@@ -469,7 +469,7 @@ private fun AeroAcToggleButton(
         Text(
             text = "AC",
             color = animatedColor,
-            fontSize = 20.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = 0.5.sp
         )
@@ -515,8 +515,8 @@ private fun CleanTemperaturePill(
 
     Box(
         modifier = Modifier
-            .width(92.dp)
-            .height(58.dp)
+            .width(114.dp)
+            .height(62.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(CleanPillSurface)
             .pointerInput(Unit) {
@@ -551,7 +551,7 @@ private fun CleanTemperaturePill(
         Text(
             text = displayText,
             color = animatedTempColor,
-            fontSize = 25.sp,
+            fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = (-0.5).sp,
             modifier = Modifier.clickable(
@@ -566,7 +566,7 @@ private fun CleanTemperaturePill(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = (-5).dp)
-                .width(30.dp)
+                .width(36.dp)
                 .height(3.dp)
                 .clip(RoundedCornerShape(999.dp))
                 .background(cueColor)
@@ -603,8 +603,8 @@ private fun CleanFanSpeedPill(
 
     Box(
         modifier = Modifier
-            .width(92.dp)
-            .height(58.dp)
+            .width(114.dp)
+            .height(62.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(CleanPillSurface)
             .pointerInput(Unit) {
@@ -649,12 +649,12 @@ private fun CleanFanSpeedPill(
                 imageVector = AeroIcons.IcFan4Blade,
                 contentDescription = "Fan Speed",
                 tint = activeTint,
-                modifier = Modifier.size(23.dp)
+                modifier = Modifier.size(28.dp)
             )
             Text(
                 text = displayText,
                 color = if (isHvacPowered && windLevel > 0) Color.White else InactiveIconTint,
-                fontSize = 23.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold
             )
         }
@@ -664,7 +664,7 @@ private fun CleanFanSpeedPill(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = (-5).dp)
-                .width(30.dp)
+                .width(36.dp)
                 .height(3.dp)
                 .clip(RoundedCornerShape(999.dp))
                 .background(cueColor)

@@ -271,11 +271,11 @@ private fun AppDrawerGridItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // 64.dp Borderless Dark Tile (#0C0F14)
+        // 74.dp Borderless Dark Tile (#0C0F14)
         Box(
             modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .size(74.dp)
+                .clip(RoundedCornerShape(22.dp))
                 .background(TileSurface),
             contentAlignment = Alignment.Center
         ) {
@@ -285,15 +285,15 @@ private fun AppDrawerGridItem(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = app.label,
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(14.dp))
                 )
             } else {
                 Icon(
                     imageVector = fallbackIcon,
                     contentDescription = app.label,
                     tint = ElectricCyan,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(38.dp)
                 )
             }
         }
@@ -301,7 +301,7 @@ private fun AppDrawerGridItem(
         Text(
             text = app.label,
             color = LabelTextColor,
-            fontSize = 12.sp,
+            fontSize = 12.5.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -172,6 +172,18 @@ class AeroBarOverlayService : Service() {
         registerReceiver(packageChangeReceiver, packageFilter)
 
         setupDualOverlayWindows()
+
+        // Background Pre-warming: Prefetch App Drawer & Recent Apps in RAM during boot so first tap opens in 0ms!
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Pre-warming App Drawer and Recent Apps in RAM...")
+                appDrawerViewModel?.loadApps()
+                recentAppsRepository.getRecentTasks()
+                Log.d(TAG, "Pre-warming complete: Caches warmed and ready.")
+            } catch (e: Exception) {
+                Log.w(TAG, "Silent pre-warming encountered non-critical error: ${e.message}")
+            }
+        }
     }
 
     private fun onBarCollapseChanged(collapsed: Boolean) {
