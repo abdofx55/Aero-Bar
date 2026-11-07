@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aero.bar.domain.model.AppItem
+import com.aero.bar.ui.icons.AeroIcons
 import com.aero.bar.ui.theme.AeroBarTheme
 import com.aero.bar.ui.theme.ElectricCyan
 
@@ -51,6 +52,15 @@ private val PopupSurface = Color(0xFF0C1016)
 private val TileSurface = Color(0xFF141A23)
 private val CyanSoftBg = Color(0x1F00D2FF)
 private val LabelTextColor = Color(0xFFE2E8F0)
+
+private val OEM_GARBAGE_PACKAGES = setOf(
+    "com.qualcomm.qti.logkit",
+    "com.touch.opentouch",
+    "com.touch.improvetouch",
+    "com.dongfeng.dab",
+    "com.dongfeng.radio",
+    "com.android.camera2"
+)
 
 /**
  * Floating All Apps Drawer Overlay (860dp Wide, Borderless Very Dark Gray #0C1016, Zero Elevation):
@@ -103,35 +113,102 @@ fun AppDrawerView(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                // 1. Header Row: Title + Count Pill + Auto-Dismiss Countdown
+                // 1. Header Row: Title + Tabs (All vs Hidden) + Auto-Filter OEM button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isArabic) "جميع التطبيقات" else "All Apps",
+                            text = if (isArabic) "قائمة التطبيقات" else "App Drawer",
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
 
+                        // Segmented Switch: All vs Hidden
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF141A23))
+                                .padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Tab 1: All Apps
+                            val isAllSelected = state.currentTab == AppDrawerTab.ALL
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isAllSelected) ElectricCyan else Color.Transparent)
+                                    .clickable {
+                                        onResetTimer()
+                                        onIntent(AppDrawerIntent.OnTabChanged(AppDrawerTab.ALL))
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (isArabic) "الكل (${state.apps.size})" else "All (${state.apps.size})",
+                                    color = if (isAllSelected) Color(0xFF0C1016) else Color(0xFF94A3B8),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Tab 2: Hidden Apps
+                            val isHiddenSelected = state.currentTab == AppDrawerTab.HIDDEN
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isHiddenSelected) Color(0xFFF59E0B) else Color.Transparent)
+                                    .clickable {
+                                        onResetTimer()
+                                        onIntent(AppDrawerIntent.OnTabChanged(AppDrawerTab.HIDDEN))
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = AeroIcons.IcEyeOff,
+                                    contentDescription = null,
+                                    tint = if (isHiddenSelected) Color(0xFF0C1016) else Color(0xFFF59E0B),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = if (isArabic) "المخفية (${state.hiddenApps.size})" else "Hidden (${state.hiddenApps.size})",
+                                    color = if (isHiddenSelected) Color(0xFF0C1016) else Color(0xFF94A3B8),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Right Side: Auto-Filter OEM button if garbage apps exist in visible list
+                    val hasOemGarbageVisible = state.apps.any { it.packageName in OEM_GARBAGE_PACKAGES }
+                    if (state.currentTab == AppDrawerTab.ALL && hasOemGarbageVisible) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(CyanSoftBg)
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x22F59E0B))
+                                .clickable {
+                                    onResetTimer()
+                                    onIntent(AppDrawerIntent.OnAutoFilterOemApps)
+                                }
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (isArabic) "${state.filteredApps.size} تطبيق" else "${state.filteredApps.size} Apps",
-                                color = ElectricCyan,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                text = if (isArabic) "⚡ إخفاء أدوات المصنع الزائدة" else "⚡ Auto-Hide OEM Tools",
+                                color = Color(0xFFFBBF24),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -148,31 +225,80 @@ fun AppDrawerView(
                     }
                 }
 
-                // 2. 5-Column App Grid (Starts from right in Arabic, left in English)
-                LazyVerticalGrid(
-                    state = gridState,
-                    columns = GridCells.Fixed(5),
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                    contentPadding = PaddingValues(bottom = 8.dp)
-                ) {
-                    items(
-                        items = state.filteredApps,
-                        key = { it.packageName }
-                    ) { app ->
-                        AppDrawerGridItem(
-                            app = app,
-                            drawerCoordinates = drawerCoordinates,
-                            onClick = {
-                                onIntent(AppDrawerIntent.OnAppClicked(app))
-                                onDismissOverlay()
-                            },
-                            onLongClick = { offset ->
-                                selectedItemOffset = offset
-                                onIntent(AppDrawerIntent.OnAppLongClicked(app))
+                // 2. Body: Either Empty State or 5-Column App Grid
+                if (state.currentTab == AppDrawerTab.HIDDEN && state.hiddenApps.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color(0xFF141A23)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = AeroIcons.IcEye,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(30.dp)
+                                )
                             }
-                        )
+                            Text(
+                                text = if (isArabic) "لا توجد تطبيقات مخفية حتى الآن" else "No Hidden Apps",
+                                color = Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isArabic) "اضغط مطولاً على أي تطبيق في القائمة الرئيسية لإخفائه هنا" else "Long-press any app in the main list to hide it here",
+                                color = Color(0xFF64748B),
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        state = gridState,
+                        columns = GridCells.Fixed(5),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 8.dp)
+                    ) {
+                        items(
+                            items = state.filteredApps,
+                            key = { it.packageName }
+                        ) { app ->
+                            AppDrawerGridItem(
+                                app = app,
+                                drawerCoordinates = drawerCoordinates,
+                                isArabic = isArabic,
+                                onClick = {
+                                    if (state.currentTab == AppDrawerTab.HIDDEN) {
+                                        onIntent(AppDrawerIntent.OnUnhideApp(app))
+                                    } else {
+                                        onIntent(AppDrawerIntent.OnAppClicked(app))
+                                        onDismissOverlay()
+                                    }
+                                },
+                                onLongClick = { offset ->
+                                    selectedItemOffset = offset
+                                    onIntent(AppDrawerIntent.OnAppLongClicked(app))
+                                },
+                                onUnhide = {
+                                    onIntent(AppDrawerIntent.OnUnhideApp(app))
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -212,6 +338,15 @@ fun AppDrawerView(
                             onIntent(AppDrawerIntent.OnAppDetails(selectedApp))
                             onDismissOverlay()
                         },
+                        onHide = {
+                            if (selectedApp.isHidden) {
+                                onIntent(AppDrawerIntent.OnUnhideApp(selectedApp))
+                            } else {
+                                onIntent(AppDrawerIntent.OnHideApp(selectedApp))
+                            }
+                            selectedItemOffset = null
+                            onIntent(AppDrawerIntent.OnDismissContextMenu)
+                        },
                         onUninstall = {
                             onIntent(AppDrawerIntent.OnUninstallApp(selectedApp))
                             onDismissOverlay()
@@ -232,8 +367,10 @@ fun AppDrawerView(
 private fun AppDrawerGridItem(
     app: AppItem,
     drawerCoordinates: LayoutCoordinates?,
+    isArabic: Boolean,
     onClick: () -> Unit,
-    onLongClick: (Offset?) -> Unit
+    onLongClick: (Offset?) -> Unit,
+    onUnhide: () -> Unit = {}
 ) {
     val fallbackIcon = getFallbackAppIcon(app.packageName, app.label)
     val interactionSource = remember { MutableInteractionSource() }
@@ -267,11 +404,11 @@ private fun AppDrawerGridItem(
                     onLongClick(offset)
                 }
             )
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // 74.dp Borderless Dark Tile (#0C0F14)
+        // 74.dp Borderless Dark Tile (#141A23)
         Box(
             modifier = Modifier
                 .size(74.dp)
@@ -287,12 +424,15 @@ private fun AppDrawerGridItem(
                     modifier = Modifier
                         .size(52.dp)
                         .clip(RoundedCornerShape(14.dp))
+                        .graphicsLayer {
+                            if (app.isHidden) alpha = 0.65f
+                        }
                 )
             } else {
                 Icon(
                     imageVector = fallbackIcon,
                     contentDescription = app.label,
-                    tint = ElectricCyan,
+                    tint = if (app.isHidden) Color(0xFFF59E0B) else ElectricCyan,
                     modifier = Modifier.size(38.dp)
                 )
             }
@@ -301,12 +441,30 @@ private fun AppDrawerGridItem(
         Text(
             text = app.label,
             color = LabelTextColor,
-            fontSize = 12.5.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )
+
+        if (app.isHidden) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF10B981))
+                    .clickable { onUnhide() }
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isArabic) "استعادة" else "Unhide",
+                    color = Color(0xFF0F172A),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
 

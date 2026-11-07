@@ -297,6 +297,7 @@ class AeroBarOverlayService : Service() {
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 or WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
+                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
 
         // Lifecycle owner shared by both Compose windows
@@ -549,19 +550,7 @@ class AeroBarOverlayService : Service() {
             } catch (_: Exception) {}
         }
 
-        // Tier 1: True System Navigation Bar (reserves native insets in WindowManager for all apps)
-        try {
-            safeRemove()
-            params.type = TYPE_NAVIGATION_BAR
-            windowManager?.addView(view, params)
-            Log.i(TAG, "Added ${params.title} with native TYPE_NAVIGATION_BAR (2019)")
-            return
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed TYPE_NAVIGATION_BAR (2019): ${e.message}")
-            safeRemove()
-        }
-
-        // Tier 2: Navigation Bar Panel
+        // Tier 1: Navigation Bar Panel (2024) - Highest persistent navigation layer that stays visible over Fullscreen & Camera
         try {
             safeRemove()
             params.type = TYPE_NAVIGATION_BAR_PANEL
@@ -570,6 +559,18 @@ class AeroBarOverlayService : Service() {
             return
         } catch (e: Exception) {
             Log.w(TAG, "Failed TYPE_NAVIGATION_BAR_PANEL (2024): ${e.message}")
+            safeRemove()
+        }
+
+        // Tier 2: True System Navigation Bar (2019)
+        try {
+            safeRemove()
+            params.type = TYPE_NAVIGATION_BAR
+            windowManager?.addView(view, params)
+            Log.i(TAG, "Added ${params.title} with native TYPE_NAVIGATION_BAR (2019)")
+            return
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed TYPE_NAVIGATION_BAR (2019): ${e.message}")
             safeRemove()
         }
 
@@ -651,6 +652,19 @@ class AeroBarOverlayService : Service() {
             serviceScope.launch {
                 delay(30_000L)
                 CrashHandler.clearSafeMode(this@AeroBarOverlayService)
+            }
+        }
+
+        intent?.getStringExtra("hide_package")?.let { pkg ->
+            serviceScope.launch(Dispatchers.IO) {
+                appRepository.hideApp(pkg)
+                appDrawerViewModel?.loadApps()
+            }
+        }
+        intent?.getStringExtra("unhide_package")?.let { pkg ->
+            serviceScope.launch(Dispatchers.IO) {
+                appRepository.unhideApp(pkg)
+                appDrawerViewModel?.loadApps()
             }
         }
 

@@ -55,6 +55,7 @@ fun AppContextMenu(
     app: AppItem,
     isArabic: Boolean,
     onDetails: () -> Unit,
+    onHide: () -> Unit,
     onUninstall: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -152,7 +153,20 @@ fun AppContextMenu(
                 onClick = onDetails
             )
 
-            // Action Item 2: Direct Uninstall (إلغاء التثبيت) - Shown only if non-system app
+            // Action Item 2: Hide or Unhide App (إخفاء / إظهار التطبيق)
+            ContextMenuActionItem(
+                icon = if (app.isHidden) AeroIcons.IcEye else AeroIcons.IcEyeOff,
+                label = if (app.isHidden) {
+                    if (isArabic) "إظهار في القائمة" else "Unhide App"
+                } else {
+                    if (isArabic) "إخفاء التطبيق" else "Hide App"
+                },
+                iconTint = if (app.isHidden) Color(0xFF10B981) else Color(0xFFF59E0B),
+                textColor = Color.White,
+                onClick = onHide
+            )
+
+            // Action Item 3: Direct Uninstall (إلغاء التثبيت) - Shown only if non-system app
             if (app.canUninstall) {
                 ContextMenuActionItem(
                     icon = Icons.Outlined.Delete,

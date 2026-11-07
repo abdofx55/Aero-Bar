@@ -85,8 +85,9 @@ class AeroBarPreferences @Inject constructor(
     }
 
     private fun persistHiddenApps(set: Set<String>) {
-        _hiddenAppsFlow.value = set
-        prefs.edit { putStringSet(KEY_HIDDEN_APPS, set) }
+        val copy = HashSet(set)
+        _hiddenAppsFlow.value = copy
+        prefs.edit { putStringSet(KEY_HIDDEN_APPS, copy) }
     }
 
     companion object {

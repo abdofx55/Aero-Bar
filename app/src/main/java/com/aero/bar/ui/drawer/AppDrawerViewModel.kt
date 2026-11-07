@@ -28,10 +28,13 @@ class AppDrawerViewModel @Inject constructor(
         viewModelScope.launch {
             appRepository.getInstalledApps().collect { allApps ->
                 val visibleApps = allApps.filter { !it.isHidden }
+                val hiddenApps = allApps.filter { it.isHidden }
                 _uiState.update { current ->
+                    val activeSource = if (current.currentTab == AppDrawerTab.ALL) visibleApps else hiddenApps
                     current.copy(
                         apps = visibleApps,
-                        filteredApps = filterList(visibleApps, current.searchQuery),
+                        hiddenApps = hiddenApps,
+                        filteredApps = filterList(activeSource, current.searchQuery),
                         isLoading = false
                     )
                 }
@@ -41,11 +44,22 @@ class AppDrawerViewModel @Inject constructor(
 
     fun onIntent(intent: AppDrawerIntent) {
         when (intent) {
+            is AppDrawerIntent.OnTabChanged -> {
+                _uiState.update { current ->
+                    val activeSource = if (intent.tab == AppDrawerTab.ALL) current.apps else current.hiddenApps
+                    current.copy(
+                        currentTab = intent.tab,
+                        filteredApps = filterList(activeSource, current.searchQuery),
+                        selectedAppForContext = null
+                    )
+                }
+            }
             is AppDrawerIntent.OnSearchQueryChanged -> {
                 _uiState.update { current ->
+                    val activeSource = if (current.currentTab == AppDrawerTab.ALL) current.apps else current.hiddenApps
                     current.copy(
                         searchQuery = intent.query,
-                        filteredApps = filterList(current.apps, intent.query)
+                        filteredApps = filterList(activeSource, intent.query)
                     )
                 }
             }
@@ -69,7 +83,31 @@ class AppDrawerViewModel @Inject constructor(
             is AppDrawerIntent.OnHideApp -> {
                 viewModelScope.launch {
                     appRepository.hideApp(intent.app.packageName)
+                    loadApps()
                     _uiState.update { it.copy(selectedAppForContext = null) }
+                }
+            }
+            is AppDrawerIntent.OnUnhideApp -> {
+                viewModelScope.launch {
+                    appRepository.unhideApp(intent.app.packageName)
+                    loadApps()
+                    _uiState.update { it.copy(selectedAppForContext = null) }
+                }
+            }
+            is AppDrawerIntent.OnAutoFilterOemApps -> {
+                viewModelScope.launch {
+                    val oemGarbage = setOf(
+                        "com.qualcomm.qti.logkit",
+                        "com.touch.opentouch",
+                        "com.touch.improvetouch",
+                        "com.dongfeng.dab",
+                        "com.dongfeng.radio",
+                        "com.android.camera2"
+                    )
+                    oemGarbage.forEach { pkg ->
+                        appRepository.hideApp(pkg)
+                    }
+                    loadApps()
                 }
             }
             is AppDrawerIntent.OnAppDetails -> {
@@ -94,7 +132,7 @@ class AppDrawerViewModel @Inject constructor(
                 }
             }
             is AppDrawerIntent.OnOpenHiddenAppsPanel -> {
-                // Navigates or sets flag for hidden apps screen
+                onIntent(AppDrawerIntent.OnTabChanged(AppDrawerTab.HIDDEN))
             }
         }
     }
